@@ -23,10 +23,13 @@
 
 // time
 #include <chrono>
+#include <boost/filesystem.hpp>
 
 using namespace std;
 using namespace GenIn;
 using namespace GLOBREG;
+
+namespace fs = boost::filesystem;
 
 void saveResult(string fnameOut, Transform3 result){
     //create file
@@ -305,7 +308,9 @@ int main(int argc, char *argv[])
 {
     // start time
     auto begin = std::chrono::steady_clock::now();
-    
+    // set a file path (multiple scan registration)
+    fs::path filepath;
+
     if(argc == 4){
         //INPUT:
         // 1. path to the source point cloud
@@ -463,9 +468,8 @@ int main(int argc, char *argv[])
         string line;
         ifstream myfile (fnameC);
 
-
         Eigen::Matrix4f record_res;
-
+        
         if (myfile.is_open())
         {
             getline (myfile,line);
@@ -492,170 +496,274 @@ int main(int argc, char *argv[])
 
             /* initialize random seed for generating colors */
             srand (time(NULL));
-
+            
             int cR, cG, cB; //colors
-            //read point clouds
-            for(size_t i=0;i<noPC;i++)
-            {
+            // //read point clouds (4->3->2->1, sequential)
+            // for(size_t i=0;i<noPC;i++)
+            // {
+            //     cR = rand()%256;
+            //     cG = rand()%256;
+            //     cB = rand()%256;
+
+            //     getline (myfile,line);
+            //     cout << "reading: "<< line<<" ..."<< endl;
+            //     char cloudName [50];
+            //     sprintf (cloudName, "Point Cloud %d", (int)i+1);
+                
+            //     // get the file path
+            //     filepath = line;
+            //     // write the transformation
+            //     ofstream outFile(filepath.parent_path().string() + "/transform_parameters.txt", ios::app);  // append mode
+        
+            //     //read data into source pc, and register it to the target (ignore the first one)
+            //     if(i%2 == 0){
+            //         if (pcl::io::load<pcl::PointXYZ> (line, *cloudS) == -1) //* load the file
+            //         {
+            //             cout << "Couldn't read file: " << line << endl;
+            //             return (-1);
+            //         }
+
+
+            //         //voxel grid filter
+            //         cout<<"performing voxel grid sampling with grid size = "<<inlTh<<endl;
+            //         VGF(cloudS, cloudS, inlTh);
+
+            //         pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> colorSOri(cloudS, cR, cG, cB);
+            //         viewer->addPointCloud<pcl::PointXYZ> (cloudS, colorSOri, cloudName);
+            //         viewer->spinOnce ();
+
+            //         cout<<"extracting ISS keypoints..."<<endl;
+            //         ISSExt(cloudS,issS,issIdxS,inlTh);
+            //         cout<<"computing FPFH..."<<endl;
+            //         FPFHComp(cloudS,inlTh,issIdxS,fpfhS);
+
+            //         if(i==0){
+            //             continue;
+            //         }
+            //         else{
+
+            //             //match features (source to target)
+            //             cout<<"matching correspodences..."<<endl;
+            //             corrComp(fpfhS,fpfhT,corr,maxCorr,corrNOS,corrNOT);
+            //             cout<<"NO. corr = "<<corr.size()<<endl;
+
+            //             //translating the center of both point clouds to the origin
+            //             Vector3 centS(0,0,0), centT(0,0,0);
+            //             double rS, rT;
+            //             CentAndRComp(issS,centS,rS);
+            //             CentAndRComp(issT,centT,rT);
+            //             Vector3 mCentS(-centS.x,-centS.y,-centS.z);
+            //             Vector3 mCentT(-centT.x,-centT.y,-centT.z);
+            //             transPC(issS,mCentS);
+            //             transPC(issT,mCentT);
+
+            //             //optimization
+            //             cout<<"running FMP+BnB..."<<endl;
+            //             globReg4D(issS, issT, corr, corrNOS, corrNOT, inlTh,rS+rT,result);
+
+            //             //transform pc
+            //             result = TransMatCompute(result,mCentS,mCentT);
+
+            //             //after registration
+            //             //transform point clouds
+            //             Eigen::Matrix4f transform;
+            //             for(size_t i=0;i<4;i++){
+            //                 for(size_t j=0;j<4;j++){
+            //                     transform(i,j) = result.x[i+4*j];
+            //                 }
+            //             }
+
+            //             record_res = transform;
+
+            //             pcl::transformPointCloud (*cloudS, *cloudSReg, transform);
+            //             transPC(issS,centS);
+            //             pcl::transformPointCloud (*issS, *issS, transform);
+
+            //             //add transformed pc into the viewer
+            //             pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> colorS(cloudSReg, cR, cG, cB);
+            //             viewer->removePointCloud(cloudName);
+            //             viewer->addPointCloud<pcl::PointXYZ> (cloudSReg, colorS, cloudName);
+            //             viewer->spinOnce ();
+            //         }
+
+            //     }
+            //     //read data into target pc and register it to the source
+            //     else{
+            //         if (pcl::io::load<pcl::PointXYZ> (line, *cloudT) == -1) //* load the file
+            //         {
+            //             cout << "Couldn't read file: " << line << endl;
+            //             return (-1);
+            //         }
+
+            //         //voxel grid filter
+            //         cout<<"performing voxel grid sampling with grid size = "<<inlTh<<endl;
+            //         VGF(cloudT, cloudT, inlTh);
+
+            //         //add transformed pc into the viewer
+            //         pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> colorTOri(cloudT, cR, cG, cB);
+            //         viewer->addPointCloud<pcl::PointXYZ> (cloudT, colorTOri, cloudName);
+            //         viewer->spinOnce ();
+
+            //         cout<<"extracting ISS keypoints..."<<endl;
+            //         ISSExt(cloudT,issT,issIdxT,inlTh);
+
+            //         cout<<"computing FPFH..."<<endl;
+            //         FPFHComp(cloudT,inlTh,issIdxT,fpfhT);
+
+            //         //match features (target to source)
+            //         cout<<"matching correspodences..."<<endl;
+            //         corrComp(fpfhT,fpfhS,corr,maxCorr,corrNOT,corrNOS);
+            //         cout<<"NO. corr = "<<corr.size()<<endl;
+
+            //         //translating the center of both point clouds to the origin
+            //         Vector3 centS(0,0,0), centT(0,0,0);
+            //         double rS, rT;
+            //         CentAndRComp(issS,centS,rS);
+            //         CentAndRComp(issT,centT,rT);
+            //         Vector3 mCentS(-centS.x,-centS.y,-centS.z);
+            //         Vector3 mCentT(-centT.x,-centT.y,-centT.z);
+            //         transPC(issS,mCentS);
+            //         transPC(issT,mCentT);
+
+            //         cout<<"running FMP+BnB..."<<endl;
+            //         globReg4D(issT, issS, corr, corrNOT, corrNOS, inlTh,rS+rT,result);
+            //         //transform pc
+            //         result = TransMatCompute(result,mCentT,mCentS);
+
+            //         //after registration
+            //         //transform point clouds
+            //         Eigen::Matrix4f transform;
+            //         for(size_t i=0;i<4;i++){
+            //             for(size_t j=0;j<4;j++){
+            //                 transform(i,j) = result.x[i+4*j];
+            //             }
+            //         }
+
+            //         record_res = transform;
+
+            //         pcl::transformPointCloud (*cloudT, *cloudTReg, transform);
+            //         transPC(issT,centT);
+            //         pcl::transformPointCloud (*issT, *issT, transform);
+                    
+            //         //add transformed pc into the viewer
+            //         pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> colorT(cloudTReg, cR, cG, cB);
+            //         viewer->removePointCloud(cloudName);
+            //         viewer->addPointCloud<pcl::PointXYZ> (cloudTReg, colorT, cloudName);
+            //         viewer->spinOnce ();
+            //     }
+                
+            //     // write the transformation
+            //     for (int i = 0; i < 4; i++) {
+            //         for (int j = 0; j < 4; j++) {
+            //             outFile << record_res(i,j) << " ";
+            //         }
+            //         outFile << "\n";
+            //     }
+            //     outFile << "\n";
+            //     outFile.close();
+            // }
+            
+            // 2->1, 3->1, 4->1, 5->1
+            pcl::PointCloud<pcl::PointXYZ>::Ptr cloudFirst(new pcl::PointCloud<pcl::PointXYZ>);  // 第一个点云作为基准
+            Eigen::Matrix4f transformToFirst;  // 存储到第一个扫描的变换
+            for (size_t i = 0; i < noPC; i++) {
+
                 cR = rand()%256;
                 cG = rand()%256;
                 cB = rand()%256;
-
-                getline (myfile,line);
-                cout << "reading: "<< line<<" ..."<< endl;
-                char cloudName [50];
-                sprintf (cloudName, "Point Cloud %d", (int)i+1);
-                //read data into source pc, and register it to the target (ignore the first one)
-                if(i%2 == 0){
-                    if (pcl::io::load<pcl::PointXYZ> (line, *cloudS) == -1) //* load the file
-                    {
-                        cout << "Couldn't read file: " << line << endl;
-                        return (-1);
+                
+                getline(myfile, line);
+                cout << "Reading: " << line << endl;
+            
+                // get the file path
+                filepath = line;
+                // write the transformation
+                ofstream outFile(filepath.parent_path().string() + "/transform_parameters.txt", ios::app);  // append mode
+        
+                if (i == 0) {
+                    // 加载第一个点云作为基准
+                    if (pcl::io::loadPLYFile<pcl::PointXYZ>(line, *cloudFirst) == -1) {
+                        cerr << "Failed to load first cloud: " << line << endl;
+                        return -1;
                     }
-
-
-                    //voxel grid filter
-                    cout<<"performing voxel grid sampling with grid size = "<<inlTh<<endl;
-                    VGF(cloudS, cloudS, inlTh);
-
-                    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> colorSOri(cloudS, cR, cG, cB);
-                    viewer->addPointCloud<pcl::PointXYZ> (cloudS, colorSOri, cloudName);
-                    viewer->spinOnce ();
-
-                    cout<<"extracting ISS keypoints..."<<endl;
-                    ISSExt(cloudS,issS,issIdxS,inlTh);
-                    cout<<"computing FPFH..."<<endl;
-                    FPFHComp(cloudS,inlTh,issIdxS,fpfhS);
-
-                    if(i==0){
-                        continue;
-                    }
-                    else{
-
-                        //match features (source to target)
-                        cout<<"matching correspodences..."<<endl;
-                        corrComp(fpfhS,fpfhT,corr,maxCorr,corrNOS,corrNOT);
-                        cout<<"NO. corr = "<<corr.size()<<endl;
-
-                        //translating the center of both point clouds to the origin
-                        Vector3 centS(0,0,0), centT(0,0,0);
-                        double rS, rT;
-                        CentAndRComp(issS,centS,rS);
-                        CentAndRComp(issT,centT,rT);
-                        Vector3 mCentS(-centS.x,-centS.y,-centS.z);
-                        Vector3 mCentT(-centT.x,-centT.y,-centT.z);
-                        transPC(issS,mCentS);
-                        transPC(issT,mCentT);
-
-                        //optimization
-                        cout<<"running FMP+BnB..."<<endl;
-                        globReg4D(issS, issT, corr, corrNOS, corrNOT, inlTh,rS+rT,result);
-
-                        //transform pc
-                        result = TransMatCompute(result,mCentS,mCentT);
-
-                        //after registration
-                        //transform point clouds
-                        Eigen::Matrix4f transform;
-                        for(size_t i=0;i<4;i++){
-                            for(size_t j=0;j<4;j++){
-                                transform(i,j) = result.x[i+4*j];
-                            }
-                        }
-
-                        record_res = transform;
-
-                        pcl::transformPointCloud (*cloudS, *cloudSReg, transform);
-                        transPC(issS,centS);
-                        pcl::transformPointCloud (*issS, *issS, transform);
-
-                        //add transformed pc into the viewer
-                        pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> colorS(cloudSReg, cR, cG, cB);
-                        viewer->removePointCloud(cloudName);
-                        viewer->addPointCloud<pcl::PointXYZ> (cloudSReg, colorS, cloudName);
-                        viewer->spinOnce ();
-                    }
-
-                }
-                //read data into target pc and register it to the source
-                else{
-                    if (pcl::io::load<pcl::PointXYZ> (line, *cloudT) == -1) //* load the file
-                    {
-                        cout << "Couldn't read file: " << line << endl;
-                        return (-1);
-                    }
-
-                    //voxel grid filter
-                    cout<<"performing voxel grid sampling with grid size = "<<inlTh<<endl;
-                    VGF(cloudT, cloudT, inlTh);
-
-                    //add transformed pc into the viewer
-                    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> colorTOri(cloudT, cR, cG, cB);
-                    viewer->addPointCloud<pcl::PointXYZ> (cloudT, colorTOri, cloudName);
-                    viewer->spinOnce ();
-
-                    cout<<"extracting ISS keypoints..."<<endl;
-                    ISSExt(cloudT,issT,issIdxT,inlTh);
-
-                    cout<<"computing FPFH..."<<endl;
-                    FPFHComp(cloudT,inlTh,issIdxT,fpfhT);
-
-                    //match features (target to source)
-                    cout<<"matching correspodences..."<<endl;
-                    corrComp(fpfhT,fpfhS,corr,maxCorr,corrNOT,corrNOS);
-                    cout<<"NO. corr = "<<corr.size()<<endl;
-
-                    //translating the center of both point clouds to the origin
-                    Vector3 centS(0,0,0), centT(0,0,0);
-                    double rS, rT;
-                    CentAndRComp(issS,centS,rS);
-                    CentAndRComp(issT,centT,rT);
-                    Vector3 mCentS(-centS.x,-centS.y,-centS.z);
-                    Vector3 mCentT(-centT.x,-centT.y,-centT.z);
-                    transPC(issS,mCentS);
-                    transPC(issT,mCentT);
-
-                    cout<<"running FMP+BnB..."<<endl;
-                    globReg4D(issT, issS, corr, corrNOT, corrNOS, inlTh,rS+rT,result);
-                    //transform pc
-                    result = TransMatCompute(result,mCentT,mCentS);
-
-                    //after registration
-                    //transform point clouds
-                    Eigen::Matrix4f transform;
-                    for(size_t i=0;i<4;i++){
-                        for(size_t j=0;j<4;j++){
-                            transform(i,j) = result.x[i+4*j];
-                        }
-                    }
-
-                    record_res = transform;
-
-                    pcl::transformPointCloud (*cloudT, *cloudTReg, transform);
-                    transPC(issT,centT);
-                    pcl::transformPointCloud (*issT, *issT, transform);
                     
-                    //add transformed pc into the viewer
-                    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> colorT(cloudTReg, cR, cG, cB);
-                    viewer->removePointCloud(cloudName);
-                    viewer->addPointCloud<pcl::PointXYZ> (cloudTReg, colorT, cloudName);
-                    viewer->spinOnce ();
+                    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> color(cloudFirst, cR, cG, cB);
+                    viewer->removePointCloud("cloud_" + to_string(i));
+                    viewer->addPointCloud<pcl::PointXYZ>(cloudFirst, color, "cloud_" + to_string(i));
+                    viewer->spinOnce();
+
+                    VGF(cloudFirst, cloudFirst, inlTh);
+                    continue;
+                }
+                ISSExt(cloudFirst, issT, issIdxT, inlTh);  // 提取基准点云的ISS特征
+                FPFHComp(cloudFirst, inlTh, issIdxT, fpfhT);  // 计算基准点云的FPFH
+                
+                // 加载当前点云（Source）
+                pcl::PointCloud<pcl::PointXYZ>::Ptr cloudS(new pcl::PointCloud<pcl::PointXYZ>);
+                if (pcl::io::loadPLYFile<pcl::PointXYZ>(line, *cloudS) == -1) {
+                    cerr << "Failed to load: " << line << endl;
+                    return -1;
+                }
+                VGF(cloudS, cloudS, inlTh);
+
+                // 提取当前点云的ISS和FPFH
+                ISSExt(cloudS, issS, issIdxS, inlTh);
+                FPFHComp(cloudS, inlTh, issIdxS, fpfhS);
+
+                // 匹配特征（当前点云 → 基准点云）
+                corrComp(fpfhS, fpfhT, corr, maxCorr, corrNOS, corrNOT);
+                cout << "Correspondences: " << corr.size() << endl;
+
+                //translating the center of both point clouds to the origin
+                Vector3 centS(0,0,0), centT(0,0,0);
+                double rS, rT;
+                CentAndRComp(issS,centS,rS);
+                CentAndRComp(issT,centT,rT);
+                Vector3 mCentS(-centS.x,-centS.y,-centS.z);
+                Vector3 mCentT(-centT.x,-centT.y,-centT.z);
+                transPC(issS,mCentS);
+                transPC(issT,mCentT);
+                
+                // Debug
+                std::cout << "----------->mCentT: \n" << mCentT[0] << ", "<< mCentT[1] << ", "<< mCentT[2] << std::endl;
+                std::cout << "----------->mCentS: \n" << mCentS[0] << ", "<< mCentS[1] << ", "<< mCentS[2] << std::endl;
+                
+                //optimization
+                cout<<"running FMP+BnB..."<<endl;
+                Transform3 result;
+                globReg4D(issS, issT, corr, corrNOS, corrNOT, inlTh,rS+rT,result);
+                //transform pc
+                result = TransMatCompute(result,mCentS,mCentT);
+
+                // 计算变换矩阵（当前点云 → 基准点云）
+                Eigen::Matrix4f transform;
+                for (int i = 0; i < 4; i++) {
+                    for (int j = 0; j < 4; j++) {
+                        transform(i, j) = result.x[i + 4 * j];
+                    }
                 }
 
                 // write the transformation
-                ofstream outFile("/media/xiaochen/xch_disk2/ETH_Dataset/trees/transform_parameters.txt", ios::app);  // 追加模式
-                // outFile << "Transform between " << line_prev << " and " << line << ":\n";
                 for (int i = 0; i < 4; i++) {
                     for (int j = 0; j < 4; j++) {
-                        outFile << record_res(i,j) << " ";
+                        outFile << transform(i,j) << " ";
                     }
                     outFile << "\n";
                 }
                 outFile << "\n";
                 outFile.close();
+
+                // 可视化：将当前点云变换到基准坐标系
+                pcl::PointCloud<pcl::PointXYZ>::Ptr cloudReg(new pcl::PointCloud<pcl::PointXYZ>);
+                pcl::transformPointCloud(*cloudS, *cloudReg, transform);
+
+                // 添加颜色（随机）
+                pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> color(cloudReg, cR, cG, cB);
+                viewer->removePointCloud("cloud_" + to_string(i));
+                viewer->addPointCloud<pcl::PointXYZ>(cloudReg, color, "cloud_" + to_string(i));
+                viewer->spinOnce();
             }
 
-            
             myfile.close();
             while (!viewer->wasStopped())
             {
@@ -674,6 +782,9 @@ int main(int argc, char *argv[])
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double> past = std::chrono::duration_cast<std::chrono::duration<double>>(end - begin);
     std::cout << "total cost time:" << past.count() << " sec\n";
-
+    
+    ofstream timeFile(filepath.parent_path().string() + "/run_time.txt", ios::out);
+    timeFile << past.count();
+    timeFile.close();
     return 0;
 }
