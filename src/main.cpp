@@ -21,6 +21,9 @@
 //!uncomment if you have installed and want to use S4PCS (please reset to the directory of the installed library in your computer)
 //#include "../S4PCS/Super4PCS/build/install/include/pcl/registration/super4pcs.h"
 
+// time
+#include <chrono>
+
 using namespace std;
 using namespace GenIn;
 using namespace GLOBREG;
@@ -300,6 +303,9 @@ void saveFMPDependence(string fname, std::vector<int> outVec){
 
 int main(int argc, char *argv[])
 {
+    // start time
+    auto begin = std::chrono::steady_clock::now();
+    
     if(argc == 4){
         //INPUT:
         // 1. path to the source point cloud
@@ -381,7 +387,7 @@ int main(int argc, char *argv[])
         vector<pair<int, int>> data;
 
         int oneNO;
-        string fnameConfig = fpathConfig+"RegConfig_Zhipeng.config";
+        string fnameConfig = fpathConfig; //fpathConfig+"trees.config";
         cout<<fnameConfig<<endl;
         ifstream myfile (fnameConfig);
         cout<<myfile.is_open()<<endl;
@@ -397,17 +403,21 @@ int main(int argc, char *argv[])
                     cout<<"testing data["<<i<<"] = ("<<data[i].first<<", "<<data[i].second<<")"<<endl;
                     string fnameS, fnameT;
                     if(data[i].first < 10){
-                        fnameS = fpathConfig+"s0"+std::to_string(data[i].first)+".ply";
+                        // fnameS = fpathConfig+"s0"+std::to_string(data[i].first)+".ply";
+                        myfile >> fnameS;
                     }
                     else{
-                        fnameS = fpathConfig+"s"+std::to_string(data[i].first)+".ply";
+                        // fnameS = fpathConfig+"s"+std::to_string(data[i].first)+".ply";
+                        myfile >> fnameS;
                     }
 
                     if(data[i].second < 10){
-                        fnameT = fpathConfig+"s0"+std::to_string(data[i].second)+".ply";
+                        // fnameT = fpathConfig+"s0"+std::to_string(data[i].second)+".ply";
+                        myfile >> fnameT;
                     }
                     else{
-                        fnameT = fpathConfig+"s"+std::to_string(data[i].second)+".ply";
+                        // fnameT = fpathConfig+"s"+std::to_string(data[i].second)+".ply";
+                        myfile >> fnameT;
                     }
 
 
@@ -453,6 +463,8 @@ int main(int argc, char *argv[])
         string line;
         ifstream myfile (fnameC);
 
+
+        Eigen::Matrix4f record_res;
 
         if (myfile.is_open())
         {
@@ -551,6 +563,8 @@ int main(int argc, char *argv[])
                             }
                         }
 
+                        record_res = transform;
+
                         pcl::transformPointCloud (*cloudS, *cloudSReg, transform);
                         transPC(issS,centS);
                         pcl::transformPointCloud (*issS, *issS, transform);
@@ -615,17 +629,33 @@ int main(int argc, char *argv[])
                         }
                     }
 
+                    record_res = transform;
+
                     pcl::transformPointCloud (*cloudT, *cloudTReg, transform);
                     transPC(issT,centT);
                     pcl::transformPointCloud (*issT, *issT, transform);
-
+                    
                     //add transformed pc into the viewer
                     pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> colorT(cloudTReg, cR, cG, cB);
                     viewer->removePointCloud(cloudName);
                     viewer->addPointCloud<pcl::PointXYZ> (cloudTReg, colorT, cloudName);
                     viewer->spinOnce ();
                 }
+
+                // write the transformation
+                ofstream outFile("/media/xiaochen/xch_disk2/ETH_Dataset/trees/transform_parameters.txt", ios::app);  // 追加模式
+                // outFile << "Transform between " << line_prev << " and " << line << ":\n";
+                for (int i = 0; i < 4; i++) {
+                    for (int j = 0; j < 4; j++) {
+                        outFile << record_res(i,j) << " ";
+                    }
+                    outFile << "\n";
+                }
+                outFile << "\n";
+                outFile.close();
             }
+
+            
             myfile.close();
             while (!viewer->wasStopped())
             {
@@ -639,5 +669,11 @@ int main(int argc, char *argv[])
 
 
     }
+    
+    // end time
+    auto end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> past = std::chrono::duration_cast<std::chrono::duration<double>>(end - begin);
+    std::cout << "total cost time:" << past.count() << " sec\n"
+    
     return 0;
 }

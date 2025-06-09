@@ -3,3 +3,6 @@
 
 # 忽略所有 build 输出
 build/
+
+data/
+
