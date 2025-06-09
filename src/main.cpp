@@ -673,7 +673,7 @@ int main(int argc, char *argv[])
     // end time
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double> past = std::chrono::duration_cast<std::chrono::duration<double>>(end - begin);
-    std::cout << "total cost time:" << past.count() << " sec\n"
-    
+    std::cout << "total cost time:" << past.count() << " sec\n";
+
     return 0;
 }
